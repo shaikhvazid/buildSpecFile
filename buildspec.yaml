@@ -1,0 +1,20 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+        python: 3.7
+  pre_build:
+    commands:
+      - "echo Taking backup staging bucket"
+      - "echo Bucket Name $SOURCE_BUCKET_NAME"
+      - "echo Distination Bucket Name $DISTINATION_BUCKET_NAME"
+      - aws s3 sync s3://$SOURCE_BUCKET_NAME s3://$DISTINATION_BUCKET_NAME/code_backup$(date +"%d-%m-%y-%T")/
+  build:
+    commands:
+      - "echo Copying repo content to s3 bucket"
+      - aws s3 sync . s3://$SOURCE_BUCKET_NAME --exclude buildspec.yaml --exclude .git/ --exclude .gitignore
+  post_build:
+    commands:
+      - "echo Creating Invalidation"
+      - "echo Invalidation Name $INVALIDATION"
+      - aws cloudfront create-invalidation --distribution-id $INVALIDATION --paths "/*"
